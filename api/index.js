@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 // data/events.json at the repo root, written daily by the GitHub Actions collector
 // (see collector/ and .github/workflows/collect-events.yml). Override with DATA_FILE.
 const DATA_FILE = process.env.DATA_FILE
-    || join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'data', 'events.json');
+    || join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'events.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -202,6 +202,9 @@ app.use((req, res, next) => {
     next();
 });
 
+
+// Serve the front-end from public/ (only that folder is exposed, not the rest of the repo)
+app.use(express.static(join(dirname(fileURLToPath(import.meta.url)), '..', 'public')));
 
 // ---------- endpoints ----------
 

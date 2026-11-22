@@ -1,12 +1,11 @@
 {
-  "name": "nodenode",
+  "name": "sheridan-central",
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "api/server.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node api/server.js",
-    "collect": "cd .. && python3 collect.py",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Mikaela and Rita",
