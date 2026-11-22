@@ -90,3 +90,6 @@ A running record of what was asked of Claude Code, what it produced, and what th
 ## Deployment prep
 - `server.js` now also exports the app so Vercel can use either file as its entry point (local `npm run dev` still works).
 - Added `.github/workflows/collect.yml`: re-scrapes all six sources daily (about 6 AM Toronto time) and commits `data/events.json`, which also triggers a Vercel redeploy. It can be run by hand from the Actions tab. YAML checked; the scraper was dry-run locally. The workflow itself has not run on GitHub yet.
+
+## Vercel import trouble
+- Vercel's import page detected the scraper (`collector/requirements.txt`) as a second app and offered a multi-service import. Moved that file to `scripts/collector-requirements.txt` and pointed the daily workflow at it, so the repo has no Python manifest for Vercel to find. The scraper and workflow still work (dry run and YAML checked). Whether this clears the import page has not been confirmed yet.
