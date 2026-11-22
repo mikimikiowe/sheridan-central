@@ -86,3 +86,7 @@ A running record of what was asked of Claude Code, what it produced, and what th
 ## Round 6: small polish
 - Notification rows now show only the sentence and the time (event title removed from the subtext).
 - Event page action bar: "View on {organization}" wrapped onto three lines. Both buttons are now single-line; names longer than 10 characters use "View event page". Tested every organization at 320, 360, 390 and 430px wide, in both the Register and Registered states (no wrapping or clipping). Full suite still passes.
+
+## Deployment prep
+- `server.js` now also exports the app so Vercel can use either file as its entry point (local `npm run dev` still works).
+- Added `.github/workflows/collect.yml`: re-scrapes all six sources daily (about 6 AM Toronto time) and commits `data/events.json`, which also triggers a Vercel redeploy. It can be run by hand from the Actions tab. YAML checked; the scraper was dry-run locally. The workflow itself has not run on GitHub yet.
