@@ -1,0 +1,3 @@
+# Sheridan Central
+
+Project workspace.
