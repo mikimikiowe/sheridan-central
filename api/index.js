@@ -2,11 +2,14 @@ import express from 'express';
 import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { commentsRouter } from '../lib/comments.js';
 
 // data/events.json at the repo root, written daily by the GitHub Actions collector
 // (see collector/ and .github/workflows/collect-events.yml). Override with DATA_FILE.
 const DATA_FILE = process.env.DATA_FILE
     || join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'events.json');
+
+const DEMO_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'demo-events.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -84,12 +87,22 @@ function parseMonth(value) {
 const EMPTY = { last_updated: null, sources: {}, events: [] };
 let cache = { mtimeMs: null, data: EMPTY };
 
+// A few hand-made events (matching the Figma designs) so the demo comments have somewhere to live
+function loadDemoEvents() {
+    try {
+        return JSON.parse(readFileSync(DEMO_FILE, 'utf-8'));
+    } catch {
+        return [];
+    }
+}
+
 function loadData() {
     try {
         const { mtimeMs } = statSync(DATA_FILE);
         if (mtimeMs !== cache.mtimeMs) {
             const data = JSON.parse(readFileSync(DATA_FILE, 'utf-8'));
             if (!Array.isArray(data.events)) throw new Error('no events array');
+            data.events = [...data.events, ...loadDemoEvents()];
             cache = { mtimeMs, data };
         }
     } catch (error) {
@@ -199,8 +212,14 @@ function sendEvents(req, res, filters = {}) {
 // The front-end is hosted separately, so let it call this API from any origin
 app.use((req, res, next) => {
     res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-User-Id');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') return res.status(204).end();
     next();
 });
+
+// Read JSON request bodies (comments are sent as JSON). Small limit: comments are short.
+app.use(express.json({ limit: '10kb' }));
 
 
 // Serve the front-end from public/ (only that folder is exposed, not the rest of the repo)
@@ -296,6 +315,9 @@ app.get('/api/events/time/:time', (req, res) => {
 
 app.get('/api/events/location/:location', (req, res) => sendEvents(req, res, { location: req.params.location }));
 
+// Comments: create, read, update, delete (see lib/comments.js)
+app.use('/api', commentsRouter(id => loadData().events.some(e => e.id === id)));
+
 // Keep this after the other /api/events/... routes so it doesn't swallow them
 app.get('/api/events/:id', (req, res) => {
     const event = loadEvents().find(e => e.id === req.params.id);
@@ -308,6 +330,13 @@ app.get('/api/events/:id', (req, res) => {
 // Unknown /api/... paths get JSON instead of an HTML error page
 app.use('/api', (req, res) => {
     res.status(404).json({ error: 'Unknown endpoint. See /api for the list.' });
+});
+
+// Last-resort error handler: log the details, send a friendly JSON message
+app.use((err, req, res, next) => {
+    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Request body must be valid JSON.' });
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong on our side. Please try again.' });
 });
 
 // Run locally with `node api/server.js` from backend/; Vercel imports the app instead

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "sample-hackville", "source": "clubs", "source_name": "Sheridan Clubs",
+    "source_url": "https://sheridancollege.campuslabs.ca/engage/events",
+    "start_date": "2026-12-04", "end_date": "2026-12-04",
+    "title": "Hackville 2026", "url": "https://sheridancollege.campuslabs.ca/engage/events",
+    "image_url": "", "excerpt": "Sheridan's annual 24-hour hackathon. Build something in a weekend with mentors on site.",
+    "description": "Sheridan's annual hackathon. Form a team, build something in a weekend, and pitch it on Sunday. Beginner workshops run Friday night and mentors are on site all weekend.",
+    "occurrences": [{ "date": "2026-12-04", "date_text": "Friday, December 4, 2026" }],
+    "address": { "venue": "Trafalgar Campus, S-Wing Atrium", "lines": ["Trafalgar Campus"], "map_url": null },
+    "categories": ["FREE"], "tags": ["Technology"], "is_online": false, "is_cancelled": false,
+    "price": "Free", "month": "Dec", "day": "4", "time": "9:00 AM", "venue": "Trafalgar Campus · S-Wing Atrium", "time_24h": "09:00",
+    "campus": "Trafalgar", "demo": true
+  },
+  {
+    "id": "sample-social-battery", "source": "ssu", "source_name": "SSU",
+    "source_url": "https://www.thessu.ca/events",
+    "start_date": "2026-12-02", "end_date": "2026-12-02",
+    "title": "Social Battery: Board Game Night", "url": "https://www.thessu.ca/events",
+    "image_url": "", "excerpt": "A low-key evening of board games and snacks.",
+    "description": "A low-key evening of board games and snacks. Drop in for an hour or stay all night. Quiet seating is available.",
+    "occurrences": [{ "date": "2026-12-02", "date_text": "Wednesday, December 2, 2026" }],
+    "address": { "venue": "HMC Student Centre", "lines": ["HMC Student Centre"], "map_url": null },
+    "categories": ["FREE"], "tags": ["Student Life"], "is_online": false, "is_cancelled": false,
+    "price": "Free", "month": "Dec", "day": "2", "time": "6:00 PM", "venue": "HMC Student Centre", "time_24h": "18:00",
+    "campus": "HMC", "demo": true
+  },
+  {
+    "id": "sample-ping-pong", "source": "ssu", "source_name": "SSU",
+    "source_url": "https://www.thessu.ca/events",
+    "start_date": "2026-11-10", "end_date": "2026-11-10",
+    "title": "Ping Pong Tournament", "url": "https://www.thessu.ca/events",
+    "image_url": "", "excerpt": "Single-elimination ping pong tournament.",
+    "description": "Single-elimination ping pong tournament. Paddles provided.",
+    "occurrences": [{ "date": "2026-11-10", "date_text": "Tuesday, November 10, 2026" }],
+    "address": { "venue": "HMC Gym", "lines": ["HMC Gym"], "map_url": null },
+    "categories": ["FREE"], "tags": ["Sports"], "is_online": false, "is_cancelled": false,
+    "price": "Free", "month": "Nov", "day": "10", "time": "12:00 PM", "venue": "HMC Gym", "time_24h": "12:00",
+    "campus": "HMC", "demo": true
+  }
+]
