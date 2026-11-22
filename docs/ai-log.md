@@ -58,3 +58,31 @@ A running record of what was asked of Claude Code, what it produced, and what th
 - **Checked:** the scripted browser test now has 53 checks, all passing. It found three real bugs that were fixed: the filter drop-down closing itself, Sign out not signing out, and "Mark all read" bringing the dot back.
 - **Student to check:** look at each screen on your phone; turn "Show my name on comments" off and see what others see.
 - **Known gaps:** Followers / Following are fixed demo numbers; "Password" and "Who can follow me" show a "not available in the demo" message; the Share sheet from Figma is not built (Share uses the phone's own share menu or copies the link).
+
+## Round 3 adjustments
+- **Asked:** notification panel should pop (no slide); Back should always go to the previous page; explain the "three dots" button; Clear past events on Saved; on cards with no image put the wording above the graphics; "Show my name on comments" off should make comments Anonymous; add an Organization filter.
+- **Claude produced:**
+  - Notification panel and its backdrop no longer animate.
+  - Back (event page, Settings, Subscribed, closing the discussion) now uses the real browser history, with a fallback if the app has no earlier page.
+  - Saved events keep a copy ("snapshot") so a finished event still shows as "Ended" after the scraper drops it. "Clear past events" is always visible, and removing or clearing is reversible, so Undo works even for finished events.
+  - Poster titles are drawn above the decorative circles.
+  - Anonymous means anonymous everywhere (card avatars, comments, notifications, Activity); the YOU badge still marks your own comment, and the composer says "Posting as Anonymous".
+  - Filters now include Organization (the 6 real sources).
+- **Checked:** the scripted browser test now has 73 checks, all passing on the final run.
+- **Honest notes:** while testing, an earlier broken run of my test script (a) switched the demo user's "Show my name on comments" setting, (b) deleted the seeded organizer reply on the Cozy Scavenger Hunt thread, and (c) the cleanup removed one stray comment ("hhhh") that looked like a manual test comment. I restored (a) and (b) and told the student about (c).
+
+## Round 4: Back after refresh, chat button
+- **Asked:** Back still not going back properly; replace the share icon with the chat icon that opens the discussion.
+- **Claude produced:** Back now asks the browser (Navigation API, with a fallback) whether an earlier page exists, so it keeps working after a refresh instead of falling back to Events; the browser's own scroll restoration is turned off in favour of ours. The share icon on the event page is replaced by a chat button with the comment count, which opens the discussion directly.
+- **Checked:** 79 scripted checks pass, including refreshing an event page and then pressing Back (returns to Events, or to Saved if you came from Saved). The chat-button change first broke event pages (a function used before it was defined); the test caught it and it was fixed before reporting.
+- **Honest note:** I could not reproduce the student's original Back problem exactly, so the refresh case is my best explanation, not a confirmed cause.
+
+## Round 5: Back and Chat were secretly pressing Save
+- **Asked:** the chat button must only open the discussion, never change Save.
+- **Cause (found by measuring what a tap actually hits):** the Save button has an invisible oversized tap area. On the event page the button was positioned so that area stretched across the whole row of top buttons, so tapping Back or Chat really tapped Save. This also explains the earlier "Back toggles Save" report.
+- **Fix:** one CSS line so the tap area stays around the Save button itself.
+- **Checked:** with the old CSS, Back and Chat both hit "save-toggle"; with the fix each hits itself. New tests cover this and that opening/closing chat leaves Save unchanged on the page and on the server. 83/83 pass.
+
+## Round 6: small polish
+- Notification rows now show only the sentence and the time (event title removed from the subtext).
+- Event page action bar: "View on {organization}" wrapped onto three lines. Both buttons are now single-line; names longer than 10 characters use "View event page". Tested every organization at 320, 360, 390 and 430px wide, in both the Register and Registered states (no wrapping or clipping). Full suite still passes.

@@ -28,8 +28,7 @@ export async function openNotifications({ onChange } = {}) {
         const sentence = item.type === 'reminder'
             ? [h('strong', {}, item.event_title), ` ${item.when}`]
             : [h('strong', {}, item.actor.name), item.type === 'reply' ? ' replied to your comment' : ` commented in ${item.event_title}`];
-        const sub = item.type === 'reminder' ? 'Reminder'
-            : item.type === 'reply' ? `${item.event_title} · ${relativeTime(item.created_at)}` : relativeTime(item.created_at);
+        const sub = item.type === 'reminder' ? 'Reminder' : relativeTime(item.created_at); // just the time, no event title
         return h('button', { class: `notif-row${item.unread ? ' unread' : ''}`, type: 'button',
             onClick: () => go(`#/event/${encodeURIComponent(item.event_id)}${item.type === 'reminder' ? '' : '/discussion'}`) },
             item.type === 'reminder'

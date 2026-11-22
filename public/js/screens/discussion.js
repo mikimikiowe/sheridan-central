@@ -1,7 +1,7 @@
 // The discussion bottom sheet: Read, Create, Update and Delete comments on one event.
 import { h, icon } from '../dom.js';
 import { getComments, postComment, patchComment, deleteComment, markSeen } from '../api.js';
-import { state } from '../state.js';
+import { state, canGoBack } from '../state.js';
 import { relativeTime, dateText } from '../format.js';
 import { showToast } from '../components/toast.js';
 import { confirmDelete } from '../components/dialog.js';
@@ -24,7 +24,13 @@ export async function openDiscussion(event, { onBadges } = {}) {
     let busy = false;
 
     const me = state.me || { name: 'You', initials: 'ME', avatar_color: '#0E7FA0' };
-    const close = () => location.replace(`#/event/${encodeURIComponent(event.id)}`);
+    const postingAs = () => (state.me?.show_name_on_comments === false ? 'Anonymous' : me.name);
+    const detailHash = `#/event/${encodeURIComponent(event.id)}`;
+    const close = () => {
+        // If we opened the sheet from this event's page, step back to it; otherwise swap this entry for the event page
+        if (canGoBack() && state.cameFrom === detailHash) history.back();
+        else { state.replaceNext = true; location.replace(detailHash); }
+    };
 
     // ---- page pieces ----
     const title = h('h2', { id: 'sheet-title' });
@@ -108,7 +114,7 @@ export async function openDiscussion(event, { onBadges } = {}) {
             ? [h('span', {}, 'Editing comment'), h('button', { class: 'x-small', type: 'button', 'aria-label': 'Cancel editing', onClick: cancelEdit }, icon('x'))]
             : replyTo ? [h('span', {}, `Replying to ${replyTo.author.name}`), h('button', { class: 'x-small', type: 'button', 'aria-label': 'Cancel reply', onClick: cancelReply }, icon('x'))] : []));
         banner.hidden = !editing && !replyTo;
-        meta.replaceChildren(...(typing && !editing ? [h('span', {}, `Posting as ${me.name}`), h('span', {}, `${text.length} / ${MAX}`)] : []));
+        meta.replaceChildren(...(typing && !editing ? [h('span', {}, `Posting as ${postingAs()}`), h('span', {}, `${text.length} / ${MAX}`)] : []));
         meta.hidden = !(typing && !editing);
     }
 

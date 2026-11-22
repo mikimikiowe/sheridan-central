@@ -12,9 +12,11 @@ import { openDiscussion } from './screens/discussion.js';
 import { getMe, getEvent, getActivity, getNotifications } from './api.js';
 import { state } from './state.js';
 
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; // we restore scroll ourselves
 const app = document.getElementById('app');
 const overlay = document.getElementById('overlay-root');
 let previousHash = null;
+let lastIdx = -1;     // position of the current page in this app's own history
 let routeNumber = 0; // lets us ignore a slow screen if you've already moved on
 
 // Who is signed in (the discussion sheet says "Posting as ..."). The app works without it.
@@ -37,6 +39,12 @@ async function route() {
     const hash = location.hash || '#/events';
     const myRoute = ++routeNumber;
     const isDiscussion = /^#\/event\/[^/]+\/discussion$/.test(hash);
+
+    // Give every page of this app a position in the history, so Back can tell if there is an earlier page.
+    let idx = history.state?.idx;
+    if (idx == null) { idx = state.replaceNext ? Math.max(lastIdx, 0) : lastIdx + 1; history.replaceState({ idx }, ''); }
+    state.replaceNext = false; lastIdx = idx; state.canGoBack = idx > 0;
+    state.cameFrom = previousHash;
 
     // Remember where you were scrolled, and which list you came from
     if (previousHash && !previousHash.endsWith('/discussion')) state.scroll[previousHash] = window.scrollY;

@@ -1,5 +1,5 @@
 import { h, icon } from '../dom.js';
-import { state } from '../state.js';
+import { state, goBack } from '../state.js';
 
 // The header used by every screen, so the title always sits in exactly the same place.
 // It stays at the top while the page scrolls. `right` goes on the right, `back` adds a back arrow,
@@ -8,7 +8,7 @@ export function pageHeader(title, { right, back, below } = {}) {
     return h('div', { class: 'header-wrap' },
         h('div', { class: 'screen-header' },
             h('div', { class: 'header-left' },
-                back && h('a', { class: 'back-link', href: back, 'aria-label': 'Back' }, icon('back')),
+                back && h('button', { class: 'back-link', type: 'button', 'aria-label': 'Back', onClick: () => goBack(back) }, icon('back')),
                 h('h1', { class: 'screen-title' }, title)),
             right),
         below);

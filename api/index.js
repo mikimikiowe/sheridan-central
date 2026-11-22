@@ -7,6 +7,7 @@ import { savesRouter } from '../lib/saves.js';
 import { meRouter } from '../lib/me.js';
 import { activityRouter } from '../lib/activity.js';
 import { currentUser } from '../lib/auth.js';
+import { getDb } from '../lib/db.js';
 import { enrichEvents, withDerivedFields } from '../lib/enrich.js';
 
 // data/events.json at the repo root, written daily by the GitHub Actions collector
@@ -323,11 +324,16 @@ app.use('/api', activityRouter({ allEvents: () => loadData().events, isPast, tod
 // Keep this after the other /api/events/... routes so it doesn't swallow them
 app.get('/api/events/:id', async (req, res) => {
     // Look in all events (including finished ones) so a saved past event still opens
-    const event = loadData().events.find(e => e.id === req.params.id);
+    const me = await currentUser(req).catch(() => null);
+    let event = loadData().events.find(e => e.id === req.params.id);
+    if (!event && me) {
+        // No longer in the scraped data (it has finished): use the copy kept when it was saved
+        const saved = await (await getDb()).collection('saves').findOne({ user_id: me.user_id, event_id: req.params.id }); // (removed saves too, so an opened event still works)
+        event = saved?.snapshot;
+    }
     if (!event) {
         return res.status(404).json({ error: 'Event not found' });
     }
-    const me = await currentUser(req).catch(() => null);
     const [enriched] = await enrichEvents([event], me?.user_id);
     res.json({ ...enriched, is_past: (event.end_date || event.start_date) < today() });
 });

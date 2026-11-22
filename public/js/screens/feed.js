@@ -7,14 +7,18 @@ import { pageHeader, bellButton } from '../components/header.js';
 import { openNotifications } from '../components/notifications.js';
 
 // Filter choices live here so they survive going to an event and back.
-const filters = { campus: new Set(), time: new Set(), week: false };
+const filters = { campus: new Set(), org: new Set(), time: new Set(), week: false };
 const CAMPUSES = ['Trafalgar', 'HMC', 'Davis'];
 const TIMES = ['Morning', 'Afternoon', 'Evening'];
 
-const activeCount = () => filters.campus.size + filters.time.size + (filters.week ? 1 : 0);
+const activeCount = () => filters.campus.size + filters.org.size + filters.time.size + (filters.week ? 1 : 0);
+
+// The organizations are whatever sources the real events come from (SSU, Sheridan Clubs, EDGE, ...)
+const organizations = () => [...new Set(state.events.map(e => e.source_name))].sort();
 
 function matches(e) {
     if (filters.campus.size && !filters.campus.has(e.campus)) return false;
+    if (filters.org.size && !filters.org.has(e.source_name)) return false;
     if (filters.time.size && !filters.time.has(e.time_of_day)) return false;
     if (filters.week && !isThisWeek(e)) return false;
     return true;
@@ -34,13 +38,14 @@ export async function renderFeed(root, { onBadges } = {}) {
 
     const refresh = () => { paintBar(); paintPanel(); paintList(); };
     const toggle = (set, value) => () => { set.has(value) ? set.delete(value) : set.add(value); refresh(); };
-    const clearAll = () => { filters.campus.clear(); filters.time.clear(); filters.week = false; refresh(); };
+    const clearAll = () => { filters.campus.clear(); filters.org.clear(); filters.time.clear(); filters.week = false; refresh(); };
 
     // Row: the Filters drop-down button, then a removable chip for each filter that is on
     function paintBar() {
         const n = activeCount();
         const active = [
             ...[...filters.campus].map(v => [v, toggle(filters.campus, v)]),
+            ...[...filters.org].map(v => [v, toggle(filters.org, v)]),
             ...[...filters.time].map(v => [v, toggle(filters.time, v)]),
             ...(filters.week ? [['This week', () => { filters.week = false; refresh(); }]] : []),
         ];
@@ -60,6 +65,7 @@ export async function renderFeed(root, { onBadges } = {}) {
             h('div', { class: 'opts' }, options.map(o => h('button', { class: `opt${isOn(o) ? ' on' : ''}`, type: 'button', 'aria-pressed': String(isOn(o)), onClick: flip(o) }, o))));
         panelHost.replaceChildren(h('div', { class: 'filter-panel', id: 'filter-panel' },
             group('Campus', CAMPUSES, o => filters.campus.has(o), o => toggle(filters.campus, o)),
+            group('Organization', organizations(), o => filters.org.has(o), o => toggle(filters.org, o)),
             group('Time of day', TIMES, o => filters.time.has(o), o => toggle(filters.time, o)),
             group('When', ['This week'], () => filters.week, () => () => { filters.week = !filters.week; refresh(); }),
             h('div', { class: 'filter-actions' },

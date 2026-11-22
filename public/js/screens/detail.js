@@ -1,11 +1,10 @@
 import { h, icon } from '../dom.js';
 import { getEvent } from '../api.js';
-import { state, setRegistered } from '../state.js';
+import { state, setRegistered, goBack } from '../state.js';
 import { badgeDate, dateText, timeText, whereText, priceText, isFree, isPast, relativeTime } from '../format.js';
 import { poster } from '../components/poster.js';
 import { saveToggle } from '../components/saveToggle.js';
 import { avatarStack } from '../components/avatars.js';
-import { showToast } from '../components/toast.js';
 
 export async function renderDetail(root, id) {
     root.replaceChildren(h('div', { class: 'message' }, 'Loading…'));
@@ -22,29 +21,25 @@ export async function renderDetail(root, id) {
     const past = isPast(event);
     const where = whereText(event), time = timeText(event), price = priceText(event);
 
-    async function share() {
-        const url = location.href;
-        try {
-            if (navigator.share) await navigator.share({ title: event.title, url });
-            else { await navigator.clipboard.writeText(url); showToast('Link copied'); }
-        } catch { /* the user closed the share sheet: nothing to do */ }
-    }
+    // Back = the page you were on before
+    const back = () => goBack(state.lastList || '#/events');
 
-    // Always goes somewhere: the list you came from (Events, Saved, ...)
-    const back = () => { location.hash = state.lastList || '#/events'; };
+    const openDiscussion = () => { location.hash = `#/event/${encodeURIComponent(event.id)}/discussion`; };
 
     const hero = h('div', { class: 'hero' },
         poster(event),
         h('div', { class: 'hero-actions' },
             h('button', { class: 'round-btn', type: 'button', 'aria-label': 'Back', onClick: back }, icon('back')),
             h('div', { class: 'right' },
-                h('button', { class: 'round-btn', type: 'button', 'aria-label': 'Share', onClick: share }, icon('share')),
+                // Jump straight to the discussion without scrolling to the bottom of the page
+                h('button', { class: 'round-btn chat-btn', type: 'button', onClick: openDiscussion,
+                    'aria-label': event.commentCount ? `Open discussion, ${event.commentCount} comments` : 'Open discussion' },
+                    icon('message'), event.commentCount > 0 && h('span', { class: 'count-badge' }, event.commentCount > 99 ? '99+' : event.commentCount)),
                 saveToggle(event, { large: true }))));
 
     const paragraphs = (event.description || event.excerpt || '').split(/\n{1,}/).map(p => p.trim()).filter(Boolean);
 
-    const discussion = h('button', { class: 'discussion-card', type: 'button',
-        onClick: () => { location.hash = `#/event/${encodeURIComponent(event.id)}/discussion`; } },
+    const discussion = h('button', { class: 'discussion-card', type: 'button', onClick: openDiscussion },
         h('div', {},
             h('h3', {}, 'Open discussion'),
             h('div', { class: 'sub' }, event.commentCount
@@ -78,8 +73,9 @@ export async function renderDetail(root, id) {
             h('div', { class: 'description' }, paragraphs.map(p => h('p', {}, p))),
             discussion),
         h('div', { class: 'action-bar' },
+            // Long organization names would be cramped, so they get a shorter label
             event.url && h('a', { class: 'btn outline', href: event.url, target: '_blank', rel: 'noopener' },
-                `View on ${event.source_name}`, icon('external')),
+                h('span', { class: 'btn-label' }, event.source_name.length > 10 ? 'View event page' : `View on ${event.source_name}`), icon('external')),
             registerBtn));
     return event;
 }

@@ -15,6 +15,9 @@ export const state = {
     unread: 0, // unread notifications (drives the bell's pink dot)
     newReplies: 0, // threads with a new reply (drives the Activity tab's pink dot)
     me: null, // the signed-in user's profile (loaded at start-up)
+    canGoBack: false, // is there an earlier page of this app in the browser history?
+    cameFrom: null, // the screen we were on just before this one
+    replaceNext: false, // the next navigation replaces the current history entry instead of adding one
     lastList: '#/events', // the last list screen visited, so Back from an event always has somewhere to go
     scroll: {}, // scroll position per screen, so Back returns you to where you were
 };
@@ -28,4 +31,19 @@ export function setRegistered(id, on) {
 export function setUser(id) {
     state.userId = id; state.me = null; state.unread = 0; state.newReplies = 0;
     write('userId', id || '');
+}
+
+// Is there an earlier page of this app to go back to? Ask the browser itself when it can tell us
+// (that stays right even after a refresh); otherwise use our own count.
+export function canGoBack() {
+    const nav = window.navigation;
+    if (nav && typeof nav.canGoBack === 'boolean') return nav.canGoBack;
+    return state.canGoBack;
+}
+
+// Back = the page you were on before. If this app has no earlier page (you opened a link directly),
+// go to `fallback` instead.
+export function goBack(fallback = '#/events') {
+    if (canGoBack()) history.back();
+    else location.hash = fallback;
 }

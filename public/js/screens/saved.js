@@ -8,13 +8,12 @@ import { pageHeader } from '../components/header.js';
 
 export async function renderSaved(root) {
     const list = h('div', { class: 'cards' });
-    const clearBtn = h('button', { class: 'btn outline small', type: 'button', disabled: true }, 'Clear past events');
+    const clearBtn = h('button', { class: 'btn outline small', type: 'button' }, 'Clear past events');
     let events = [];
 
     root.replaceChildren(pageHeader('Saved events', { right: clearBtn }), list);
 
     function paint() {
-        clearBtn.disabled = !events.some(e => e.isPast);
         if (events.length === 0) {
             list.replaceChildren(h('div', { class: 'message empty' },
                 h('div', { class: 'empty-icon' }, icon('bookmark')),
@@ -44,7 +43,7 @@ export async function renderSaved(root) {
     clearBtn.addEventListener('click', async () => {
         try {
             const { removed, event_ids } = await clearPastSaves();
-            if (!removed) return;
+            if (!removed) return showToast('No past events to clear');
             events = events.filter(e => !event_ids.includes(e.id));
             paint();
             showToast(`${removed} past event${removed === 1 ? '' : 's'} cleared`, { action: { label: 'Undo', onClick: async () => {
