@@ -3,13 +3,16 @@ import { readFileSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { commentsRouter } from '../lib/comments.js';
+import { savesRouter } from '../lib/saves.js';
+import { meRouter } from '../lib/me.js';
+import { activityRouter } from '../lib/activity.js';
+import { currentUser } from '../lib/auth.js';
+import { enrichEvents, withDerivedFields } from '../lib/enrich.js';
 
 // data/events.json at the repo root, written daily by the GitHub Actions collector
 // (see collector/ and .github/workflows/collect-events.yml). Override with DATA_FILE.
 const DATA_FILE = process.env.DATA_FILE
     || join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'events.json');
-
-const DEMO_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'demo-events.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,22 +90,13 @@ function parseMonth(value) {
 const EMPTY = { last_updated: null, sources: {}, events: [] };
 let cache = { mtimeMs: null, data: EMPTY };
 
-// A few hand-made events (matching the Figma designs) so the demo comments have somewhere to live
-function loadDemoEvents() {
-    try {
-        return JSON.parse(readFileSync(DEMO_FILE, 'utf-8'));
-    } catch {
-        return [];
-    }
-}
-
 function loadData() {
     try {
         const { mtimeMs } = statSync(DATA_FILE);
         if (mtimeMs !== cache.mtimeMs) {
             const data = JSON.parse(readFileSync(DATA_FILE, 'utf-8'));
             if (!Array.isArray(data.events)) throw new Error('no events array');
-            data.events = [...data.events, ...loadDemoEvents()];
+            data.events = data.events.map(withDerivedFields);
             cache = { mtimeMs, data };
         }
     } catch (error) {
@@ -200,10 +194,13 @@ function filterEvents(events, filters) {
 }
 
 // Send filtered events; query params (?location=hmc&time=evening) stack on top of any endpoint
-function sendEvents(req, res, filters = {}) {
+async function sendEvents(req, res, filters = {}) {
     const allFilters = { ...req.query, ...filters };
     const events = filterEvents(loadEvents(), allFilters);
-    res.json({ count: events.length, last_updated: loadData().last_updated, filters: allFilters, events });
+    // Add comment counts, commenters and "is it saved" from the database
+    const me = await currentUser(req).catch(() => null);
+    const enriched = await enrichEvents(events, me?.user_id);
+    res.json({ count: enriched.length, last_updated: loadData().last_updated, filters: allFilters, events: enriched });
 }
 
 
@@ -316,15 +313,23 @@ app.get('/api/events/time/:time', (req, res) => {
 app.get('/api/events/location/:location', (req, res) => sendEvents(req, res, { location: req.params.location }));
 
 // Comments: create, read, update, delete (see lib/comments.js)
-app.use('/api', commentsRouter(id => loadData().events.some(e => e.id === id)));
+const eventExists = id => loadData().events.some(e => e.id === id);
+app.use('/api', commentsRouter(eventExists));
+const isPast = e => (e.end_date || e.start_date) < today();
+app.use('/api', savesRouter({ allEvents: () => loadData().events, isPast }));
+app.use('/api', meRouter({ allEvents: () => loadData().events, isPast }));
+app.use('/api', activityRouter({ allEvents: () => loadData().events, isPast, todayIso: today }));
 
 // Keep this after the other /api/events/... routes so it doesn't swallow them
-app.get('/api/events/:id', (req, res) => {
-    const event = loadEvents().find(e => e.id === req.params.id);
+app.get('/api/events/:id', async (req, res) => {
+    // Look in all events (including finished ones) so a saved past event still opens
+    const event = loadData().events.find(e => e.id === req.params.id);
     if (!event) {
         return res.status(404).json({ error: 'Event not found' });
     }
-    res.json(event);
+    const me = await currentUser(req).catch(() => null);
+    const [enriched] = await enrichEvents([event], me?.user_id);
+    res.json({ ...enriched, is_past: (event.end_date || event.start_date) < today() });
 });
 
 // Unknown /api/... paths get JSON instead of an HTML error page

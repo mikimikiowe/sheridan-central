@@ -5,3 +5,5 @@ node_modules/
 *.log
 .vscode/
 !.env.example
+__pycache__/
+*.pyc

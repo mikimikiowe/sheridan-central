@@ -1,5 +1,6 @@
 // Creates the demo users, demo comments and indexes in MongoDB Atlas.
 // Run with: npm run seed   (safe to run again: it wipes and re-creates the demo data)
+import { readFileSync } from 'node:fs';
 import { getDb, closeDb } from '../lib/db.js';
 
 const users = [
@@ -10,17 +11,34 @@ const users = [
     { user_id: 'u_rsingh',  name: 'R. Singh',  initials: 'RS', role: 'student',   program: 'Business',         year: '2nd year', campus: 'HMC',       avatar_color: '#F59E0B', show_name_on_comments: true },
 ];
 
-// minutes ago -> Date, so the demo comments always look recent
+// minutes ago -> Date, so the sample comments always look recent
 const ago = (min) => new Date(Date.now() - min * 60_000);
 
+// Attach the sample comments to REAL upcoming events from data/events.json
+// (no made-up events). We pick a spread of sources so several cards have discussions.
+const file = JSON.parse(readFileSync(new URL('../data/events.json', import.meta.url), 'utf-8'));
+const today = new Date().toISOString().slice(0, 10);
+const upcoming = file.events.filter(e => (e.end_date || e.start_date) >= today && e.start_date >= today);
+const pick = (source, n = 0) => upcoming.filter(e => e.source === source)[n];
+const [eventA, eventB, eventC, eventD] = [pick('clubs', 0), pick('ssu', 0), pick('theatre', 0), pick('clubs', 1)];
+
 const comments = [
-    { comment_id: 'c_seed_1', event_id: 'sample-hackville', user_id: 'u_apatel',  comment_text: 'Is this open to first-years with no coding experience?', created_at: ago(60 * 26) },
-    { comment_id: 'c_seed_2', event_id: 'sample-hackville', user_id: 'u_molarte', comment_text: 'Yes! We run beginner workshops on Friday night and mentors are on site all weekend.', created_at: ago(60 * 24), parent_id: 'c_seed_1' },
-    { comment_id: 'c_seed_3', event_id: 'sample-hackville', user_id: 'u_jchen',   comment_text: 'Looking for two teammates, I do art and level design.', created_at: ago(60 * 5) },
-    { comment_id: 'c_seed_4', event_id: 'sample-hackville', user_id: 'u_rsingh',  comment_text: 'Do we need to bring our own laptop?', created_at: ago(90) },
-    { comment_id: 'c_seed_5', event_id: 'sample-social-battery', user_id: 'u_srivera', comment_text: 'Is the space wheelchair accessible?', created_at: ago(60 * 3) },
-    { comment_id: 'c_seed_6', event_id: 'sample-social-battery', user_id: 'u_molarte', comment_text: 'Yes, the HMC Student Centre has step-free access and quiet seating.', created_at: ago(40), parent_id: 'c_seed_5' },
-].map(c => ({ parent_id: null, ...c, updated_at: c.created_at }));
+    // Event A: a thread with an organizer reply
+    { id: 'c_seed_1', event: eventA, user: 'u_apatel',  text: 'Is this open to everyone, or do I need to sign up first?', ago: 60 * 26 },
+    { id: 'c_seed_2', event: eventA, user: 'u_molarte', text: 'Everyone is welcome! Just show up, no sign-up needed.', ago: 60 * 24, parent: 'c_seed_1' },
+    { id: 'c_seed_3', event: eventA, user: 'u_jchen',   text: 'Looking forward to this one, anyone going together?', ago: 60 * 5 },
+    { id: 'c_seed_4', event: eventA, user: 'u_rsingh',  text: 'First time going. Is it beginner friendly?', ago: 90 },
+    // Event B: an accessibility question from the signed-in demo student
+    { id: 'c_seed_5', event: eventB, user: 'u_srivera', text: 'Is the space wheelchair accessible?', ago: 60 * 3 },
+    { id: 'c_seed_6', event: eventB, user: 'u_molarte', text: 'Yes, the venue has step-free access and quiet seating.', ago: 40, parent: 'c_seed_5' },
+    // Events C and D: shorter discussions
+    { id: 'c_seed_7', event: eventC, user: 'u_jchen',   text: 'Are student tickets available?', ago: 60 * 8 },
+    { id: 'c_seed_8', event: eventD, user: 'u_rsingh',  text: 'What time should I arrive?', ago: 25 },
+].filter(c => c.event) // skip if the data has no such event
+ .map(c => ({
+    comment_id: c.id, event_id: c.event.id, user_id: c.user, comment_text: c.text,
+    created_at: ago(c.ago), updated_at: ago(c.ago), parent_id: c.parent ?? null,
+}));
 
 const db = await getDb();
 
